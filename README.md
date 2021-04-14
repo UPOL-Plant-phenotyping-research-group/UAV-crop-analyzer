@@ -18,8 +18,7 @@ UAV-crop-analyzer is a tool developed for purpose of growth analysis of various 
 ### 1. Manual localization of ROI
 In first step user will use module **manual_field_crop.py**. This module visualizes raw point cloud (with given downsampling rate) and generates **field_metadata.json** file. In **field_metadata.json** file user will define x-y coordinates of ROI (region of interest). User should define ROI in a way to define ROI as small as possible, so unnecessary noisy points are excluded.
 
-![plot](/Users/michal/Desktop/Dev/Data/Lidar/Tutorial/ROI.png)
-
+![alt text](https://github.com/[UPOL-Plant-phenotyping-research-group]/[UAV-crop-analyzer]/blob/[master]/roi.png?raw=true
 
 - improvements:
 -   Numba, GPU, Concurent programming
