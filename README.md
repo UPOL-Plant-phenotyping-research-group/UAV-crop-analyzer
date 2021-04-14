@@ -22,7 +22,7 @@ In first step user will use module **manual_field_crop.py**. This module visuali
 ### 2. Field preprocessing
 In next part of pipeline, user will call **terrain_handler.py** module. This module performs two essential preprocessing steps *Outliers removal* and *Terrain effect removal* and prepares point cloud of field for further analysis.
 
-As a first outliers are detected and removed from point cloud. For each point is computed local neigborhood (radius or k-nearest neighbors) and mean distance of z-coordinate is computed for this neighborhood. Points with significantly (deviance is configurable) big mean distance are considered as outliers.
+As a first outliers are detected and removed from point cloud. For each point is computed local neigborhood (radius or k-nearest neighbors) and mean distance of z-coordinate of this neighborhood. Points with significantly (deviance is configurable) big mean distance are considered as outliers.
 
 ##### Raw point cloud of field
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/field.png?raw=true)
