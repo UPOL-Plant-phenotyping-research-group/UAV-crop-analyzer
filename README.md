@@ -12,6 +12,8 @@ UAV-crop-analyzer is a tool developed for purpose of growth analysis of various 
 
 ## Modules
 
+Neighborhoods described in next sections are based on x-y axis.
+
 ### 1. Manual localization of Field/ROI
 In first step user will use module **manual_field_crop.py**. This module visualizes raw point cloud (with given downsampling rate) and generates **field_metadata.json** file. In **field_metadata.json** file user will define x-y coordinates of ROI (region of interest). User should define ROI in a way to define ROI as small as possible, so unnecessary noisy points are excluded.
 
@@ -20,7 +22,7 @@ In first step user will use module **manual_field_crop.py**. This module visuali
 ### 2. Field preprocessing
 In next part of pipeline, user will call **terrain_handler.py** module. This module performs two essential preprocessing steps *Outliers removal* and *Terrain effect removal* and prepares point cloud of field for further analysis.
 
-As a first outliers are detected and removed from point cloud. For each point is defined local neigborhood (perimeter or k-nearest neighbors) and mean distance of z-coordinate is computed for this neighborhood. Points with significantly (deviance is configurable) big mean distance are considered as outliers.
+As a first outliers are detected and removed from point cloud. For each point is computed local neigborhood (radius or k-nearest neighbors) and mean distance of z-coordinate is computed for this neighborhood. Points with significantly (deviance is configurable) big mean distance are considered as outliers.
 
 ##### Raw point cloud of field
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/field.png?raw=true)
@@ -46,12 +48,24 @@ Final step of terrain computation is fitting terrain grid points with surface sp
 ##### Deterrained field
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/deterrained_field.png?raw=true)
 
-### 3. Featurization of points
+##### Raw field
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/clean_field.png?raw=true)
+
+### 3. Evaluation of cloud point
+Next step in processing pipeline is featurization of points. For each point two neighborhoods are computed based on selected metric (we are using Minkowski metric). One neighborhood is computed with k-nearest neighboors method, second one with radius method. For given subset of points in both neighborhoods Principal Component Analysis is applied and eigenvalues and eigenvectors are computed. Based on computed eigenvalues and eigenvectors several features is computed (*Eigenvalues sum*, *Omnivariance*, *Eigenentropy*, *Anisotropy*, *Planarity*, *Linearity*, *Surface variation*, *Sphericity*, *Verticality*, *First order moment*, *Average distance in neighborhood*). In this step it's convenient to use downsampling to reduce time cost. Structure of plots is computed on given subset of points. Downsampling rate should't be so small (for us 5% of points was fine), that structure of plots won't be visible anymore.
+
+Now we have two sets of features for each point determined with different neighborhood definition. For both sets of features Gaussian Mixture Clustering algorithm with two components is evaluated. With this approach we are trying to find two classes of points **ground class** and **crop class**. Point is consider to be **crop class** only if it was clustered as this class for both sets of features.
+
+##### Classified points
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/classification.png?raw=true)
+
+
 
 
 
 - improvements:
--   Numba, GPU, Concurent programming
--   point density paremeter
--   not just rectangular shapes or grid shapes of fields
+-   Software computation acceleration: Numba, GPU, Concurent programming, definiton of new arrays with predefined dimensions (not arbitrary)
+-   local point density paremeter used in neghborhood computations
 -   better understanding of feature selection
+-   not just rectangular shapes or grid shapes of fields
+
