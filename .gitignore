@@ -1,3 +1,10 @@
+UAV/
+UAV-dev/
+configure_helpers.txt
+
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
