@@ -38,7 +38,7 @@ As a second it's necessary to compute and remove effect of terrain trend, so exp
 Than regular terrain grid is formed with set of terrain points. For each point of grid, z-coordinate is defined as mean value of *k-nearest terrain points*. Important parameter of grid is **resolution**, it determines density of points in the grid. Bigger resolution means more detailed and precise estimation of terrain.
 
 ##### Terrain grid
-![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_points.png?raw=true)
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_grid.png?raw=true)
 
 Final step of terrain computation is fitting terrain grid points with surface spline of **NURBS** Python library and substraction of terrain spline from field point cloud.
 
@@ -65,7 +65,7 @@ Classification information will be used for computation of another feature of po
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/svm_plane.png?raw=true)
 
 ##### Edge points
-![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/classification.png?raw=true)
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/edges.png?raw=true)
 
 ### 4. Plot localization
 Computed features will be used for plots localization in the next part of pipeline. As a first points classified as **crop** are used for computation of optimal rotation of point cloud and dominant coordinate.  We are trying to find such rotation, which maximizes sum of *x* and *y* coordinates variation of *z* coordinate. Than coordinate with higher variation is determined as dominant. This is important for desciption of plots orientation.
