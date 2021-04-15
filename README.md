@@ -40,7 +40,7 @@ Than regular terrain grid is formed with set of terrain points. For each point o
 ##### Terrain grid
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_points.png?raw=true)
 
-Final step of terrain computation is fitting terrain grid points with surface spline with **NURBS** Python library and substract spline of terrain from field point cloud.
+Final step of terrain computation is fitting terrain grid points with surface spline of **NURBS** Python library and substraction of terrain spline from field point cloud.
 
 ##### Terrain fit with B-spline
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_spline.png?raw=true)
@@ -67,7 +67,7 @@ Classification information will be used for computation of another feature of po
 ##### Edge points
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/classification.png?raw=true)
 
-### 4. Plot detection
+### 4. Plot localization
 Computed features will be used for plots localization in the next part of pipeline. As a first points classified as **crop** are used for computation of optimal rotation of point cloud and dominant coordinate.  We are trying to find such rotation, which maximizes sum of *x* and *y* coordinates variation of *z* coordinate. Than coordinate with higher variation is determined as dominant. This is important for desciption of plots orientation.
 
 ##### Rotated crop points
@@ -78,17 +78,46 @@ Rotated **crop** points are used for localization of plot seeds. Seeds are compu
 ##### Seed detection with Fourier transform
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/plot_signal.png?raw=true)
 
-Plots borders are computed with iterative rectangle region growing algorithm. Each plot is initialized in seed and is growing until certain size. Edge points are used to stop expansion of rectangle. This step is not completely finished yet and it's last missing part.
+Our approach assumes plots in a shape of parallel rectangles. Plots borders are computed with iterative rectangle region growing algorithm. Each plot is initialized in seed and is growing until certain size. Edge points are used to stop expansion of rectangle. This step is not completely finished yet and it's last missing part.
 
 ##### Plot borders
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/plots.png?raw=true)
 
-### 5. Subplot detection
+Module generates as an output batch of **las** files, each representing area of single plot.
+
+### 5. Subplot localization
+After plots are localized, we have batch of plots for further analysis. In this step of processing pipeline we describe localization of subplots, which is the same for each plot. Again we assume that single plot is made up of certain number of rectangular shaped and parallel subplots separated with small gaps. Since field blocks are designed like this, it's quite reasonable assumption. In our case each plot has equal number of subplots, but it is not necessary. In future we want to generalize structure of plot and subplot grid. 
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplots.png?raw=true)
+
+To find structure of subplots *Fourier transform* is applied on raw (not de-terrained) point cloud of plot.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplot_fourier.png?raw=true)
+
+And with little adjusment borders of subplots can be defined.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplot_borders.png?raw=true)
 
 ### 6. Subplot growth statistic evaluation
-- improvements:
+Last part of pipeline evaluates growth statistic for each subplot (experimental unit/variant). It analyzes whole batch of subplots of single plot and creates structured result in **xlsx** format. For growth analysis only de-terrained points  are used.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplot.png?raw=true)
+
+Before statistics computation, there are two preprocessing operation applied on subplot point cloud. Firstly borders of subplot are removed, this is defined by user with percentage value for *x* and *y* coordinate. Next action is to remove points, which has low value of *z*-coordinate. These points are not considered as **crop** points and are filtered out with quantile value.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/cleaned_subplot.png?raw=true)
+
+Our growth statistics is volume of subplot biomass. To compute volume we need to compute crop surface. We define regular grid for subplot and *z*-coordinate of each point in the grid is defined as mean value of *k-nearest neighboors* of subplot point cloud. Than B-Spline is fited in terrain grid points with **NURBS** Python library.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/crop_surface.png?raw=true)
+
+Volume is computed as Lebesgue integral with square sized sliding window. Height of each area defined with sliding window is median *z*-coordinate value given with all points localize in given area.
+
+## TO DO / IMPROVEMENTS 
+
 -   Software computation acceleration: Numba, GPU, Concurent programming, definiton of new arrays with predefined dimensions (not arbitrary)
 -   local point density paremeter used in neghborhood computations
 -   better understanding of feature selection
--   not just rectangular shapes or grid shapes of fields
+-   not just rectangular shapes or grid shapes of fields -> contour detection
+-   improvement of subplot localization algorithm
 
