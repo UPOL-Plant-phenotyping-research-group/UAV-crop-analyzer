@@ -127,11 +127,11 @@ Volume is computed as sum of blocks defined with area given by square sized slid
 ## INSTALLATION
 
 ### Prerequisities
-1. As a first install Python up to date version (not older than **3.9.X**) on your server. Follow instructions [of this website](https://realpython.com/installing-python) to install python required version.
-2. Python virtualenv package is required. Open terminal and execute `python3 -m pip install virtualenv` (for Unix) or `py -m pip install --user virtualenv` (for Windows) command to install this package.
+1. As a first install Python up to date version (not older than **3.9.X**) on your server. Follow instructions [of this website] (https://realpython.com/installing-python) to install python required version.
+3. Python virtualenv package is required. Open terminal and execute `python3 -m pip install virtualenv` (for Unix) or `py -m pip install --user virtualenv` (for Windows) command to install this package.
 
 ### Configure local environment
-Create your own local environment, for more see the [guide] (https://pip.pypa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
+Create your own local environment, for more see [guide](https://pipa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
 
 ```
 Michals-MacBook-Pro:Repos michal$ cd UAV-crop-analyzer/ 
