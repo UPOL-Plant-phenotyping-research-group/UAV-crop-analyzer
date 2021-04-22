@@ -124,7 +124,7 @@ Volume is computed as sum of blocks defined with area given by square sized slid
 -   improvement of subplot localization algorithm
 
 
-## Installation
+## INSTALLATION
 
 ### Prerequisities
 1. As a first install Python up to date version (not older than **3.9.X**) on your server. Follow instructions [of this website](https://realpython.com/installing-python) to install python required version.
@@ -151,7 +151,7 @@ Michals-MacBook-Pro:UAV-crop-analyzer michal$ source UAV/bin/activate
 ```
 
 ### Configure global variables
-In configs folder edit with text editor file **config_global.py** and configure:
+In configs folder edit with text editor file **config_global.py** and configure global variablles:
 ```
 Parameter LASFILE_PATH navigates software in folder, where target las file is
 stored and where output files of this module will be generated.
@@ -166,7 +166,7 @@ Parameter PLOT_NUM is number of experimental blocks in field.
 ```
 
 ```
-Parameter SUBPLOT_NUM is number of experimental units in single experimental block
+Parameter SUBPLOT_NUM is number of experimental units in single experimental block.
 ```
 
 
@@ -179,8 +179,204 @@ To manually localize field/region of interest in raw point cloud, use **manual_f
 
 
 ### Terrain handler
+To remove outlier and de-terrain point cloud of field, use **terrain_handler.py** module. 
 
+1. In configs folder edit with text editor file **config_terrain_handler.py** and configure module parameters (we are going to mention just important parameters):
+
+```
+**terrain_evaluator_Parameters**
+
+Parameter DOWNSAMPLING_RATE determines percentage number of downsampled points of raw points
+which will be processed with module. Since point clouds are huge files in general, to use 
+subset of points can significantly accelerate computation and decrease processing time.
+```
+
+```
+**outlier_detector_Parameters**
+
+Parameter DEVIANCE is essential for outlier detection. For each point average euclidean distance of z-coordinate in its 
+perimeter neighborhood is computed. We got sample of average euclidean distance of z-coordinate and we compute mean and standard
+deviation of the sample. DEVIANCE parameter defines how many standard deviations higher than sample mean has to be single distance
+of sample, to be considere as outlier.
+```
+
+```
+**terrain_filter_Parameters**
+
+Parameter WINDOW_SIZE defines size (in meters) of square sliding window (i x-y hyperplane), which used
+for terrain points selection in given area of window. It's important to define the WINDOW_SIZE big enough,
+so terrain pointswill be always in the window area. It should not happen that filtered terrain points in
+window area will include points of crop. Recommendation is to choose WINDOW_SIZE bigger than smaller
+dimension (in x-y hyperplane) of plots in your experiment.
+```
+
+```
+**terrain_filter_Parameters**
+
+Parameter WINDOW_STRIDE defines how is sliding window moved over analyzed area. Sliding windows starts in
+origin of coordinates and is moved in x and y coordinate direction with given step (in meters). This step
+is WINDOW_STRIDE.
+```
+
+```
+**terrain_grid_Parameters**
+
+Parameter GRID_RESOLUTION defines point density of terrain grid. GRID_RESOLUTION is number of equidistantly
+distributed points in x axis range and the same number of points is euqidistantly distributed in y axis range.
+In total gird is formed with GRID_RESOLUTION x GRID_RESOLUTION points 
+```
+
+2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python terrain_handler.py```
 
 ### Cloud evaluator
+To evaluate features of de-terrain field point cloud, use **cloud_evaluator.py** module. 
+
+1. In configs folder edit with text editor file **config_cloud_evaluator.py** and configure module parameters (we are going to mention just important parameters):
+
+```
+**cloud_evaluator_Parameters**
+
+Parameter DOWNSAMPLING_RATE determines percentage number of downsampled points of raw points
+which will be processed with module. Since point clouds are huge files in general, to use 
+subset of points can significantly accelerate computation and decrease processing time.
+```
+
+```
+**cloud_featurizer_Parameters**
+
+Parameter RADIUS defines neighborhood points of analyzed point for perimeter neighborhood method. 
+Evaluation of features for analyzed point is given with these points.
+```
+
+```
+**cloud_featurizer_Parameters**
+
+Parameter K defines neighborhood points of analyzed point for k-nearest neighbors neighborhood method.
+Evaluation of features for analyzed point is given with these points.
+```
+
+```
+**edge_detector_Parameters**
+
+Parameter K defines fixed number of closest points to analyzed point, which are used for
+computation of edge_entropy criterium for given point.
+```
+
+```
+**edge_detector_Parameters**
+
+Parameter ENTROPY_QUANTILE defines percentage of points with smallest edge_entropy criterium.
+These points are considered as edge points.
+```
+
+2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python cloud_evaluator.py```
+  
+### Plot localizer
+To localize plots/experimental blocks in field point cloud, use **plot_localizer.py** module. 
+
+1. In configs folder edit with text editor file **config_plot_localizer.py** and configure module parameters (we are going to mention just important parameters):
+
+```
+**plot_detector_Parameters**
+
+Parameter SIGNAL_SPAN defines size of step (in meters) for x and y axis, which is used for z-coordinate
+signal computation. Value of z-coordinate of points localized in the range is used to compute some statistic 
+(sum, mean, etz.). Smaller SIGNAL_SPAN parameter is more detail we are able detect, but computation time grows.
+Big SIGNAL_SPAN values are not recommended, it can cause loss of structure in computed signal.
+``` 
+
+2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_localizer.py```
 
 
+### Subplot localizer
+To localize subplots/experimental units in plot point cloud, use **subplot_localizer.py** module. 
+
+1. In configs folder edit with text editor file **config_subplot_localizer.py** and configure module parameters (we are going to mention just important parameters):
+
+```
+**subplot_detector_Parameters**
+
+Parameter SIGNAL_SPAN defines size of step (in meters) for not determinative axis, which is used for z-coordinate
+signal computation to detect subplots borders. Value of z-coordinate of points localized in the range is used
+to compute some statistic (sum, mean, etz.). Smaller SIGNAL_SPAN parameter is more detail we are able detect, 
+but computation time grows. Big SIGNAL_SPAN values are not recommended, it can cause loss of structure in computed signal.
+```
+
+2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python subplot_localizer.py```
+
+### Plot stats evaluator
+To evaluate growth statistics for all subplots in given plot point cloud (it's possible to evaluate batch of plots), use **plot_stat_evaluator.py** module.
+
+1. In configs folder edit with text editor file **config_plot_stat_evaluator.py** and configure module parameters (we are going to mention just important parameters):
+
+```
+**cut_border_Parameters**
+
+Parameter MAJOR_BORDER_PCT determines percentage part which is removed from size of determinative coordinate.
+It means that half of MAJOR_BORDER_PCT value is removed from lower and half from upper part of subplot. The 
+reason is to remove noisy borders of subplot.
+```
+
+```
+**cut_border_Parameters**
+
+Parameter MINOR_BORDER_PCT determines percentage part which is removed from size of not determinative coordinate.
+It means that half of MINOR_BORDER_PCT value is removed from lower and half from upper part of subplot. The 
+reason is to remove noisy borders of subplot.
+```
+
+```
+**class point_filter_Parameters**
+
+Parameter METHOD determines the way how are points with low z-coordinate value cleaned oout from subplot point cloud.
+Quantile method filters out given percentage of lowest points. Threshold method filters out points up to certain level
+of z-coordinate value.
+```
+
+```
+**class point_filter_Parameters**
+
+Parameter HEIGHT_QUANTILE filters out from subplot point cloud given percentage of points with lowest value
+of z-coordinate.
+```
+
+```
+**class point_filter_Parameters**
+
+Parameter HEIGHT_THRESHOLD filters out from subplot point cloud points with value of z-coordinate lower than
+HEIGHT_THRESHOLD value.
+```
+
+```
+**terrain_grid_Parameters**
+
+Parameter K defines fixed number of closest terrain points to given grid point, which are used for
+computation computation of grid point z-coordinate value as mean value of z-coordinate of k-closest
+terrain points.
+```
+
+```
+**terrain_grid_Parameters**
+
+Parameter GRID_RESOLUTION defines point density of terrain grid. GRID_RESOLUTION is number of equidistantly
+distributed points in x axis range and the same number of points is euqidistantly distributed in y axis range.
+In total gird is formed with GRID_RESOLUTION x GRID_RESOLUTION points.
+```
+            
+```
+**volume_evaluator_Parameters**
+
+Parameter AREA_SIZE defines size of squared sliding window, which is sliding around subplot area and is used for
+volume computation in this small area of sliding window. The principle of subplot volume computation is the same as
+as integration. The volume is sum of volumes calculated in all sliding window areas in subplot area
+```
+
+```
+**volume_evaluator_Parameters**
+
+Parameter METHOD determines the way, how volume is computed in area of sliding window. Raw method computes height 
+of block as median of z-coordinate. Surface method uses B-Spline fitted on the surface of subplot. Height of block
+given by sliding window is calculated as median of B-Spline values in given area.
+```
+ 
+2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_stat_evaluator.py```
