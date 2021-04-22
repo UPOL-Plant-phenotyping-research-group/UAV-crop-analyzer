@@ -131,7 +131,7 @@ Volume is computed as sum of blocks defined with area given by square sized slid
 2. Python virtualenv package is required. Open terminal and execute `python3 -m pip install virtualenv` (for Unix) or `py -m pip install --user virtualenv` (for Windows) command to install this package.
 
 ### Configure local environment
-Create your own local environment, for more see the [User Guide] (https://pip.pypa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
+Create your own local environment, for more see the [guide] (https://pip.pypa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
 
 ```
 Michals-MacBook-Pro:Repos michal$ cd UAV-crop-analyzer/ 
@@ -173,9 +173,9 @@ Parameter SUBPLOT_NUM is number of experimental units in single experimental blo
 ### Manual field localizer
 To manually localize field/region of interest in raw point cloud, use **manual_field_localizer.py** module.
 
-1. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python manual_field_localizer.py```
+1. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python manual_field_localizer.py```
 2. Find x-y coordinates of rectangular field with visualization tool and in created file **field metadata.json** modify borders of ractangle.
-3. Run module again to visually check field borders: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python manual_field_localizer.py```
+3. Run module again to visually check field borders: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python manual_field_localizer.py```
 
 
 ### Terrain handler
@@ -226,7 +226,7 @@ distributed points in x axis range and the same number of points is euqidistantl
 In total gird is formed with GRID_RESOLUTION x GRID_RESOLUTION points 
 ```
 
-2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python terrain_handler.py```
+2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python terrain_handler.py```
 
 ### Cloud evaluator
 To evaluate features of de-terrain field point cloud, use **cloud_evaluator.py** module. 
@@ -269,7 +269,7 @@ Parameter ENTROPY_QUANTILE defines percentage of points with smallest edge_entro
 These points are considered as edge points.
 ```
 
-2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python cloud_evaluator.py```
+2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python cloud_evaluator.py```
   
 ### Plot localizer
 To localize plots/experimental blocks in field point cloud, use **plot_localizer.py** module. 
@@ -285,7 +285,7 @@ signal computation. Value of z-coordinate of points localized in the range is us
 Big SIGNAL_SPAN values are not recommended, it can cause loss of structure in computed signal.
 ``` 
 
-2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_localizer.py```
+2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_localizer.py```
 
 
 ### Subplot localizer
@@ -302,7 +302,7 @@ to compute some statistic (sum, mean, etz.). Smaller SIGNAL_SPAN parameter is mo
 but computation time grows. Big SIGNAL_SPAN values are not recommended, it can cause loss of structure in computed signal.
 ```
 
-2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python subplot_localizer.py```
+2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python subplot_localizer.py```
 
 ### Plot stats evaluator
 To evaluate growth statistics for all subplots in given plot point cloud (it's possible to evaluate batch of plots), use **plot_stat_evaluator.py** module.
@@ -379,4 +379,4 @@ of block as median of z-coordinate. Surface method uses B-Spline fitted on the s
 given by sliding window is calculated as median of B-Spline values in given area.
 ```
  
-2. Call module from terminal: ```Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_stat_evaluator.py```
+2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_stat_evaluator.py```
