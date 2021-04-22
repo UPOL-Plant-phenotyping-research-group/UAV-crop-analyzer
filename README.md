@@ -131,7 +131,7 @@ Volume is computed as sum of blocks defined with area given by square sized slid
 3. Python virtualenv package is required. Open terminal and execute `python3 -m pip install virtualenv` (for Unix) or `py -m pip install --user virtualenv` (for Windows) command to install this package.
 
 ### Configure local environment
-Create your own local environment, for more see [guide](https://pipa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
+Create your own local environment, for more see [guide] (https://pipa.io/en/latest/user_guide/), and install dependencies requirements.txt contains list of packages and can be installed as
 
 ```
 Michals-MacBook-Pro:Repos michal$ cd UAV-crop-analyzer/ 
