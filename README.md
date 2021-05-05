@@ -12,6 +12,8 @@ UAV-crop-analyzer is a software developed for purpose of growth analysis of vari
 
 ## Modules
 
+All modules (Python script) are individually callable from your server terminal.
+
 Neighborhoods described in next sections are based on x-y axis.
 
 ### 1. Manual localization of Field/ROI
@@ -85,8 +87,12 @@ Our approach assumes plots in a shape of parallel rectangles. Plots borders are 
 
 Module generates as an output batch of **las** files, each representing area of single plot.
 
+#### Manual plot localization
+
+If automatic plot localization fails, there is possibility to define plot borders manually. Module **plot_manual_check.py** visualizes field top view and provides user with x-y coordinate information of mouse cursor. Like this user can find proper coordinates of rectangularly shaped borders. This information has to be modified in **plot_metadata.json** file. Open this file in text editor, modify *x_min*, *x_max*, *y_min*, *y_max* attributes of given plots and save all changes. Then call **plot_manual_check.py** module again to visualize and check border modifications.
+
 ### 5. Subplot localization
-After plots localization, we have batch of plots for further analysis. In this step of processing pipeline we perform localization of subplots/experimental units in each raw (not de-terrained) plot with **subplot_detector.py** module. Again we assume that single plot is made of certain number of rectangulary shaped and parallel subplots separated with small gaps. Since field blocks are typically designed like this in field experiments, it's quite reasonable assumption. Subplot borders in not dominant coordinate is computed with *Fourier transform* fitting sinusoid in *z* coordinate signal aggregated with given signal span. Coordinates of sinusoid curve minimum peaks are localized as subplot borders. User has to specify number of plots as one of global variables. Correct value of number of subplots is important for proper subplot localization, with wrong value it's not possible to fit accurate sinusoid curve.
+After plots localization, we have batch of plots for further analysis. In this step of processing pipeline we perform localization of subplots/experimental units in each raw (not de-terrained) plot with **subplot_localizer.py** module. Again we assume that single plot is made of certain number of rectangulary shaped and parallel subplots separated with small gaps. Since field blocks are typically designed like this in field experiments, it's quite reasonable assumption. Subplot borders in not dominant coordinate is computed with *Fourier transform* fitting sinusoid in *z* coordinate signal aggregated with given signal span. Coordinates of sinusoid curve minimum peaks are localized as subplot borders. User has to specify number of plots as one of global variables. Correct value of number of subplots is important for proper subplot localization, with wrong value it's not possible to fit accurate sinusoid curve.
 
 In our case each plot has equal number of subplots, but it is not necessary. In future we want to generalize structure of experimental blocks grid and border shape. 
 
@@ -100,8 +106,12 @@ And with little adjusment borders of subplots can be defined.
 
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplot_borders.png?raw=true)
 
+#### Manual subplot localization
+
+If automatic subplot localization fails, there is possibility to define subplot borders manually. First in **config_subplot_localizer.py** file define *FILENAME* parameter to specify las file (these files are stored in *plots* folder) of manually checked plot. Module **subplot_manual_check.py** visualizes plot side view and provides user with coordinate information of mouse cursor. Like this user can find proper subplot borders.  This information has to be modified in **x_y_metadata.json** file (x and y specify plot). Open this file in text editor, modify *borders* attribute (it's list of ordered border coordinates in not dominant axis) of given plot and save all changes. Then call **plot_manual_check.py** module again to visualize and check border modifications.
+
 ### 6. Subplot growth statistic evaluation
-Last part of pipeline **field_stats.py** module evaluates growth statistic for each subplot (experimental unit/variant). It analyzes whole batch of subplots of single plot and creates structured result in **xlsx** format. For growth analysis only de-terrained points are used.
+Last part of pipeline **plot_stats_evaluator.py** module evaluates growth statistic for each subplot (experimental unit/variant). It analyzes whole batch of subplots of single plot and creates structured result in **xlsx** format. For growth analysis only de-terrained points are used.
 
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplot.png?raw=true)
 
