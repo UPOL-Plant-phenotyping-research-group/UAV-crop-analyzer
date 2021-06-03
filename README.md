@@ -7,24 +7,34 @@ Michal Polak [1]
 
 ## Introduction
 
-UAV-crop-analyzer is a software developed for purpose of growth analysis of various crops based on its height. This is a first version/prototype of software, which was developed in Python 3.9 programming language. Expected input for analyzer is point cloud in **las** format and it provides user in several steps with many results. Output of last module is structured csv file providing information about crop growth in experimental units. Software was prototyped with data generated with **Ricopter** UAV machine manufactured by **Riegl** enterprise. Since we didn't produce sufficient timelines measurement of our fields, software is designed to analyse single point cloud of field at this moment. In future we plan develop more complex analysis, processing whole batch of time-sorted point clouds of field. Crucial **UAV-crop-analyzer** assumption is that crop is growing in regular rectangular grid of plots and subplots (this structure will be explained more precisely later). **UAV-crop-analyzer** is composed of 6 independent modules and its goal is to compute growth statistics of subplots (experimental units), which represents crop variants in experiment. Advantage of software is that algorithms used in **UAV-crop-analyzer** are *unsupervised* and it's use is *semi-automated*. Each module have several parameters configurable by user, which effects final output of module. The goal is to reduce the number of configurable parameters as much as possible.
-
+UAV-crop-analyzer is a software developed for purpose of growth analysis of various crops based on laser signal. Expected input is point cloud in **las** format. Each module of processing pipeline generates its own output. Last module generates structured csv file providing information about crop growth in specific locations. Software assumes regular grid of rectangular-shaped blocks-plots, this is key assumption for succesfull analysis. Software was prototyped with data generated with **Ricopter** UAV machine manufactured by **Riegl** enterprise. **UAV-crop-analyzer** is composed of 6 independent modules and its goal is to compute growth statistics of individual plots in experimental blocks. Advantage of software is that algorithms used in **UAV-crop-analyzer** are *unsupervised* and it's use is *semi-automated*. Each module have several parameters configurable by user, which effects final output of module. The software time performance needs to be optimizied with parallelization and GPU usage.
 
 ## Modules
 
-All modules (Python script) are individually callable from your server terminal.
+All modules (Python script) are individually callable from server terminal.
 
-Neighborhoods described in next sections are based on x-y axis.
+### 1. Manual ROI localization
+Usage of first **manual_roi_localizer.py** module is optional and depends on scanned area. The purpose of this module is to define rectangular-shape region of interest (ROI) for further analysis. This module visualizes raw point cloud (with a given downsampling rate) and generates a **roi_metadata.json** file. The user defines x-y coordinates of rectanglar-shape ROI and controls visualization with 3 parameters. The user should define ROI as small as possible around field, so unnecessary noisy points are not included.
 
-### 1. Manual localization of Field/ROI
-In first step user will use module **manual_field_localizer.py**. This module visualizes raw point cloud (with given downsampling rate) and generates **field_metadata.json** file. In **field_metadata.json** file user will define x-y coordinates of rectangle corners (ROI/filed). User should define ROI i as small as possible around field, so unnecessary noisy points are not included.
+```
+**roi_cropper_Parameters**
+
+Parameter DOWNSAMPLING_RATE determines percentage number of downsampled points of raw point cloud
+which will be visualized with module. Since point clouds are huge files in general, to use 
+subset of points can significantly accelerate computation and decrease processing time.
+
+Parameter LOW_HEIGHT_QUANTILE determines percentage amount of points with lowest height, which are not displayed
+for manual ROI localization.
+
+Parameter UP_HEIGHT_QUANTILE determines percentage amount of points with biggest height, which are not displayed
+for manual ROI localization.
+```
 
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/ROI.png?raw=true)
 
-### 2. Field preprocessing
-In next part of pipeline, user will call **terrain_handler.py** module. This module performs two essential preprocessing steps Outliers removal and Terrain effect removal and prepares point cloud of field for further analysis.
+### 2. Terrain adjustment
 
-As a first outliers are detected and removed from point cloud. For each point is computed local neigborhood (*radius* or *k-nearest neighbors*) and mean distance of z-coordinate of this neighborhood. Points with significantly big mean distance are considered as outliers.
+As the ROI terrain is not naturally flat, it would effect plot growth statistic values. Because of this fact a digital terrain trend removing step was included into the algorithm to remove terrain global trend of ROI. This is performed via the **terrain\_adjuster.py** module. This module performs two essential steps, Outliers removal and Terrain effect removal. First, outliers are detected and removed from the raw ROI point cloud. After outlier removal cleaned ROI point cloud **clean\_roi.las** file is generated.
 
 ##### Raw point cloud of field
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/field.png?raw=true)
@@ -32,53 +42,164 @@ As a first outliers are detected and removed from point cloud. For each point is
 ##### Point cloud of field without outliers
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/clean_field.png?raw=true)
 
-As a second it's necessary to compute and remove effect of terrain trend, so experimental units are comparable. It consits of several steps. We start to identify "terrain" points with square sliding window. With given size and stride of **sliding window** we choose percentage quantile (0.01%) of lowest points as "terrain" points. Size parameter of sliding window is important parameter and has to be determined by user according to shape and size of the field. Size should be big enough, so it can't happen that in window will be only points of crop. It's recommended to define size of sliding window at least big as smaller x-y dimension of plot/experimental block.
+
+Further, it is necessary to compute the digital terrain model (DTM) and use it for the terrain effect removal, to allow the measuring of the canopy height and not the effect in the terrain beneath it. This procedure consists of several steps. Points belonging to the terrain are identified by a square sliding window. The window defined by user-defined *size* and *stride* slides around the ROI and in each window area a percentage of points with the lowest z-coordinate value is sampled as "terrain" points with user-defined parameter the *window quantile*. The *size* parameter of sliding window is important parameter and has to be determined by user according to shape and size of the ROI. The window size should be big enough, so it cannot happen that in the window will be only points denoting crops. It is recommended to define size of the sliding window so as to be at least as big as smaller dimension of rectangular-shaped experimental block.
 
 ##### Terrain points
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_points.png?raw=true)
 
-Than regular terrain grid is formed with set of terrain points. For each point of grid, z-coordinate is defined as mean value of *k-nearest terrain points*. Important parameter of grid is **grid_resolution**, it determines density of points in the grid. Bigger resolution means more detailed and precise estimation of terrain.
+As next the regular terrain grid is formed. Important parameter of grid is the *grid resolution*, it determines the density of points in the grid. Bigger resolution means more detailed and precise estimation of the DTM. 
 
 ##### Terrain grid
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_grid.png?raw=true)
 
-Final step of terrain computation is fitting terrain grid points with surface spline (**NURBS** Python library) and substraction of terrain spline from field point cloud.
-
+The final step of the DTM evaluation is fitting the surface spline to grid points using [https://nurbs-python.readthedocs.io/en/5.x/](NURBS) Python library and generating set of spline points.
+				
 ##### Terrain fit with B-spline
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/terrain_spline.png?raw=true)
+
+Then spline points are used to remove the terrain effect of cleaned ROI points.
 
 ##### Deterrained field
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/deterrained_field.png?raw=true)
 
-##### Raw field
-![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/clean_field.png?raw=true)
+```
+**terrain_evaluator_Parameters**
 
-### 3. Evaluation of cloud point
-Next step in processing pipeline is featurization of points with **cloud_evaluator.py** module. For each point two neighborhoods are computed based on selected metric (we are using *Minkowski metric*). One neighborhood is computed with *k-nearest neighboors* method, second one with *perimeter* method. For given subset of points in both neighborhoods Principal Component Analysis is applied and eigenvalues and eigenvectors are computed. Based on computed eigenvalues and eigenvectors several features is computed (*Eigenvalues sum*, *Omnivariance*, *Eigenentropy*, *Anisotropy*, *Planarity*, *Linearity*, *Surface variation*, *Sphericity*, *Verticality*, *First order moment*, *Average distance in neighborhood*). For this step, it's convenient to use downsampling to reduce time cost. Structure of plots is computed on given subset of points. Downsampling rate should't be too small (for us 5% of points was fine). It could cause that structure of plots won't be visible anymore.
+Parameter DOWNSAMPLING_RATE determines percentage number of downsampled points of raw points
+which will be processed with module. Since point clouds are huge files in general, to use 
+subset of points can significantly accelerate computation and decrease processing time.
 
-Now we have two sets of features for each point determined with different neighborhood definition. For both sets of features *Gaussian Mixture Clustering* algorithm with two components is evaluated. With this approach we are trying to find two classes of points **ground class** and **crop class**. Point is consider to be **crop class** only if it was clustered as this class for both sets of features.
 
-##### Classified points
+**outlier_detector_Parameters**
+
+Parameter METRIC determines neighborhood shape of analyzed point. For neighborhood evaluation we are using KDTree, so
+metrics available in sklearn.neighbors.DistanceMetric can be used in our software.
+
+Parameter METHOD determines the algorithm, how neighbors of analyzed point are defined. First approach (nn) k-nearest neighbors
+selects fixed value of closest points. Second approach (perimeter) selects points in given distance from analyzed points.
+
+Parameter DEVIANCE is essential for outlier detection. For each point average euclidean distance of z-coordinate in its 
+perimeter neighbourhood is computed. We got sample of average euclidean distance of z-coordinate and we compute mean and standard
+deviation of the sample. DEVIANCE parameter defines how many standard deviations higher than mean distance has to be distance of 
+single point to consider point as outlier.
+
+Parameter RADIUS defines size of neighbourhood for perimeter neighbourhood method.
+
+Parameter K defines number of neighbours for k-nearest neighbors neighbourhood method.
+
+
+**terrain_filter_Parameters**
+
+Parameter METHOD determines the algorithm, how points with lowest value of z-coordinate are selected. Quantile method selects given
+percentage of lowest points. K-values method selects fixed number of points with lowest z-coordinate value.
+
+Parameter WINDOW_SIZE defines size (in meters) of square sliding window in xy-plane), which used
+for terrain points selection in given area of window. It's important to define the WINDOW_SIZE big enough,
+so terrain points will be always in the window area. It should not happen that filtered terrain points in
+window area will include points of crop.
+
+Parameter WINDOW_STRIDE defines how is sliding window moved around analyzed area. Sliding windows starts in
+origin of coordinates and is moved in x and y coordinate direction with given step (in meters). This step
+is WINDOW_STRIDE.
+
+Parameter K defines fixed number of points with lowest value of z-coordinate in sliding window, which
+are selected as terrain points.
+
+Parameter QUANTILE defines percentage of points with lowest value of z-coordinate in sliding window, which
+are selected as terrain points.
+
+
+**terrain_grid_Parameters**
+
+Parameter METRIC determines neighbourhood shape of analyzed point. For neighbourhood evaluation we are using KDTree, so
+metrics available in sklearn.neighbors.DistanceMetric can be used in our software.
+
+Parameter K defines fixed number of closest terrain points to given grid point, which are used for
+computation of grid point z-coordinate.
+
+Parameter GRID_RESOLUTION defines point density of terrain grid. GRID_RESOLUTION is number of equidistantly
+distributed points in x axis range and the same number of points is euqidistantly distributed in y axis range.
+In total gird is formed with GRID_RESOLUTION x GRID_RESOLUTION points.
+
+
+**surface_fit_Parameters**
+
+Parameter U_DEGREE defines polynomial order of spline for first dimension of parametrical space of surface.
+
+Parameter V_DEGREE defines polynomial order of spline for second dimension of parametrical space of surface.
+
+Evaluation delta is used to change the number of evaluated points. Increasing the number of points will
+result in a bigger evaluated points array and decreasing will reduce the size of the array. Therefore,
+evaluation delta can also be used to change smoothness of the plots generated using the visualization modules.
+```
+
+### 3. Point featurization, classification and edge detection
+
+The following module of the pipeline a **cloud_evaluator.py** performs the point featurization, the ground-crop classification and the edge points detection. For each de-terrained point the neighbourhood of the k-nearest neighbours and the neighbourhood of given radius is determined with the KDTree algorithm. For each neighbourhood [https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html?highlight=pca#sklearn.decomposition.PCA](PCA) is applied, to compute eigenvalues and eigenvectors. On the basis of computed eigenvalues and eigenvectors several, features are computed (sum of eigenvalues sum, omnivariance, eigenentropy, anisotropy, planarity, linearity, surface variation, sphericity, verticality, first order moment, average distance in neighbourhood). It's convenient to use downsampling to reduce the time of processing. It's possible to localize the experimental blocks with significantly reduced amount of point. After the  de-terrained points featurization, two sets of features are generated. Set for the radius neighbourhood and set for the k-nearest neighbours neighbourhood. For both sets of features the [https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html?highlight=aussianmixture#examples-using-sklearn-mixture-gaussianmixture](Expectation–Maximization clustering using GMM) algorithm with two components is evaluated. Based on average height of clusters, crop class and the ground class is easily determined for the both clusterings. A point is considered to be crop class only if it was clustered as this class for both sets of features.
+
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/classification.png?raw=true)
-
-Classification information will be used for computation of another feature of point cloud. This feature is again binary classification determining edge points in point cloud of field. Edge detection is one of the most important computational task of point cloud analysis. We developed our own approach for this task, which is based on *Support Vector Machine* algorithm. For each classified point *k-nereast neighbors neighborhood* is computed. We have **ground-crop** label (given with cluster analysis) for all points in neighborhood and this label is used as ground truth classification for fitting *Linear (plane) SVM* model. This plane has to go through analyzed point. It's expected that on the borders of plots, plane will separate space in a way that majority of **ground** points will occur under hyperplane and majority of **crop** points above hyperplane (or opposite). To evaluate difference of label between areas above and under hyperplane we define criterium **edge entropy**. This criterium is non-negative and more closer to zero it is, than point is more considered as edge point. User can determine edge points with **edge entropy criterium** values and its quantile as given percentage of points with lowest value of this criterium.
-
-##### Example of SVM plane fit 
+				
+To precisely localize the experimental blocks, it's necessary to detect its rectangular-shaped boundaries. Because of this it seems convenient to try detect edge points in the featurized point cloud. We tried to exploit the existing algorithms for edge point detection in point cloud like, but it didn't produce nicely structured edges of the experimental blocks. New method for the exp. block edges detection was developed and it's using result of the clustering from previous step. All e-terrained points are labeled with 0 (ground point) or 1 (crop point).	To detect the edge point, each labeled point is analyzed on its local neighbourhood. As a first the k-nearest neighbours in xy-plane is determined with the given *metric* and *K* parameters using the KDTree algorithm. Then neighbourhood is divided into the two sub-neighbourhoods using the SVM (Support vector machine) with the linear kernel. Using the labels as information for the linear SVM supervised training, the optimal separation of neighborhood in analyzed point is given with the plane (linear kernel).
+				
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/svm_plane.png?raw=true)
 
-##### Edge points
+		
+The sub-neighborhood with the higher amount of crop points and the second with less crop points is determined. It is expected that on the borders of blocks, plane will separate space in the way that majority of ground points will occur under the plane and majority of crop points above the plane (or opposite). The *edge entropy* is non-negative and lower the value is, point is more considered as edge point. User can determine edge points with the quantile which specifies a percentage of points with the lowest value of *edge entropy*.
+				
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/edges.png?raw=true)
 
-### 4. Plot localization
-Computed features are used for plots/experimental blocks localization in the next part of pipeline, **plot_localizer.py** module. As a first points classified as **crop** are used for computation of optimal rotation of point cloud and dominant coordinate.  We are trying to find such rotation, which maximizes *z* coordinate variation for *x* and *y* axis projections. Than axis with higher variation is determined as dominant. This is important for desciption of plots orientation. In this way plot borders of rotated field will be parallel with x and y coordinates, so it can be later simply cropped with rectangles without any additional rotations. 
+```
+**cloud_evaluator_Parameters**
 
-##### Rotated crop points
+Parameter DOWNSAMPLING_RATE determines percentage number of downsampled points of de-terrained points
+which will be processed with module. Since point clouds are huge files in general, to use 
+subset of points can significantly accelerate computation and decrease processing time.
+
+**cloud_featurizer_Parameters**
+
+Parameter METRIC determines neighborhood shape of analyzed point. For neighborhood evaluation we are using KDTree, so
+metrics available in sklearn.neighbors.DistanceMetric can be used in our software.
+
+Parameter DIMENSIONS determines which axis (x,y,z) are used for neighborhood computation. We are using xy-plane 
+to determine neighboring points
+
+Parameter RADIUS defines neighbourhood points of analyzed point for perimeter neighbourhood method. 
+Evaluation of features for analyzed point is based on these points.
+
+Parameter K defines neighbourhood points of analyzed point for k-nearest neighbors neighbourhood method.
+Evaluation of features for analyzed point is based on these points.
+
+**edge_detector_Parameters**
+
+Parameter METRIC determines neighbourhood shape of analyzed point. For neighbourhood evaluation we are using KDTree, so
+metrics available in sklearn.neighbors.DistanceMetric can be used in our software.
+
+Parameter K defines fixed number of closest points to analyzed point, which are used for
+computation of edge_entropy criterium for given point.
+
+Parameter ENTROPY_QUANTILE defines percentage of points with smallest edge_entropy criterium.
+These points are considered as edge points.
+```
+
+
+### 4. Plot localization
+
+The module **block\_localizer.py** performs the experimental blocks localization. Our method assumes the regular grid of experimental blocks with rectangular shape. First, points classified as crop points are used for the computation of the optimal point cloud rotation and its orientation. The ranges of coordinate x and y of is divided into certain number of intervals with the user-defined *signal span* parameter which determines the size (in meters) of these intervals. In each interval the mean value of the z-coordinate (the height signal) for the x axis and the y axis is computed. For points rotation in the xy-plane, the rotation matrix is defined. The objective is to find such a rotation, which maximizes the sum of the height signal variation in the rotated coordinates x' and y'.
+
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/crop_rotation.png?raw=true)
 
-Rotated **crop** points are used for localization of plot seeds. Seeds location in dominant coordinate is computed with *Fourier transform* fitting sinusoid in *z* coordinate signal aggregated with given signal span. Coordinates of sinusoid curve maximum peaks are localized plot seeds. User has to specify number of plots as one of global variables. Correct value of number of plots is important for proper plot localization, with wrong value it's not possible to fit accurate sinusoid curve.
+Then with the optimal value of rotation, the crop points  are rotated into the new coordinate system  x'y'z. The coordinate of x'y'-plane with the higher value of the height signal variation is defined as *dominant* and coordinate with the lower value as *not-dominant*. The experimental blocks orientation is determined with the *dominant*/*not-dominant* coordinate evaluation. In this way the block borders in the rotated coordinate system will be parallel with the x' and y' axis, so it can be defined with the rectangular-shaped border. 
+			
+Next step is the localization of the experimental block seeds. The block seed is a point which is located within the experimental block border. The height signal with the user-defined *signal span* parameter evaluated in the *dominant* coordinate of the rotated crop points is used as signal for the seeds localization. The seed locations are computed with the Fourier transform as the coordinate of the curve maximum peaks. The user has to specify the number of blocks, it is the important input for the block localization. Without the correct value it's not possible to localize the experimental blocks. 
 
-##### Seed detection with Fourier transform
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/plot_signal.png?raw=true)
+
+After the seeds localization in x'y'-plane the edge points are rotated into the $x'y'z$ coordinate system using the $R_{xy}$ rotation matrix. For each analyzed edge point two features are evaluated for the x' coordinate and the y' coordinate. First feature the *cardinality* expresses number of points in narrow interval with center in given coordinate. Second feature the *uniformity* measures the uniformity of  narrow interval with center in given coordinate. Kolmogorov-Smirnov test was used to describe uniformity of given coordiante. Evaluated features are used to compute edge point weights as weighted average of features. The normalized weights of the edge points and the exp. block seeds are used for the exp. block borders localization. The border rectangular shape is assumed, it means that we need to find *x'_{min}, y'_{min}, x'_{max}, y'_{max}* border values in the x'y'z coordinate system to determine the block location. For each seed, seed are is determined as area around the seed defined with *dominant* coordinate range. The ranges of the coordinates x' and y' of seed area are divided into the certain number of intervals with the user-defined *signal span* parameter which determines the size (in meters) of these intervals. For each interval of the x' and y' coordinate, the mean value of normalized weight is computed. The seed area edge signal is divided into the four sub-areas (smaller than seed x' coordinate, bigger than seed x' coordinate, smallr than seed y' coordinate, bigger than seed y' coordinate).
+
+
+
+
 
 Our approach assumes plots in a shape of parallel rectangles. Plots borders are computed with iterative rectangle region growing algorithm. Each plot is initialized in seed and is growing until certain size. Edge points are used to stop expansion of rectangle. This step is not completely finished yet and it's last missing part.
 
