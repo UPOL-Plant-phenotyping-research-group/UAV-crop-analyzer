@@ -183,7 +183,7 @@ These points are considered as edge points.
 ```
 
 
-### 4. Plot localization
+### 4. Block localization
 
 The module **block\_localizer.py** performs the experimental blocks localization. Our method assumes the regular grid of experimental blocks with rectangular shape. First, points classified as crop points are used for the computation of the optimal point cloud rotation and its orientation. The ranges of coordinate x and y of is divided into certain number of intervals with the user-defined *signal span* parameter which determines the size (in meters) of these intervals. In each interval the mean value of the z-coordinate (the height signal) for the x axis and the y axis is computed. For points rotation in the xy-plane, the rotation matrix is defined. The objective is to find such a rotation, which maximizes the sum of the height signal variation in the rotated coordinates x' and y'.
 
@@ -233,7 +233,7 @@ coordinate, which are not considered as the candidates for the experimental bloc
 
 ### 5. Plot localization
 
-After the exp. blocks localization, each block is identically analyzed individually. In this step of the processing pipeline we perform localization of the plots in the raw (not de-terrained) block area with the **plot\_localizer.py** module. Again, it is assumed that a single block is made up of a certain number of rectangular-shaped and parallel plots separated by small gaps. The height signal with the user-defined *signal span* parameter is evaluated in *not-dominant* coordinate of rotated x'y'z coordinate system. Plot borders location in *not-dominant* coordinate is computed with Fourier transform as coordinates of curve minimum peaks. The user has to specify the number of plots, it is important input for the plot localization. The result of the plot border localization is saved in the **block\_x\_y\_metadata.json** file, where x and y specify experimental block.
+After the exp. blocks localization, each block is identically analyzed individually. In this step of the processing pipeline we perform localization of the plots in the raw (not de-terrained) block area with the **plot_localizer.py** module. Again, it is assumed that a single block is made up of a certain number of rectangular-shaped and parallel plots separated by small gaps. The height signal with the user-defined *signal span* parameter is evaluated in *not-dominant* coordinate of rotated x'y'z coordinate system. Plot borders location in *not-dominant* coordinate is computed with Fourier transform as coordinates of curve minimum peaks. The user has to specify the number of plots, it is important input for the plot localization. The result of the plot border localization is saved in the **block_x_y_metadata.json** file, where x and y specify experimental block.
 
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/subplots.png?raw=true)
 
@@ -254,7 +254,7 @@ signal computation. Value of z-coordinate of points localized in the range is us
 Big SIGNAL_SPAN values are not recommended, it can cause loss of structure in computed signal.
 ```
 
-### 6. Subplot growth statistic evaluation
+### 6. Growth statistic evaluation
 
 The last part of pipeline is **growth_stats_evaluator.py** module which performs the growth statistic evaluation for each plot. It analyses a whole batch of plots of a single block and creates a structured result in *xlsx* format. For the growth analysis only de-terrained rotated points are used. Points of the single exp. block are cropped from de-terrained point cloud with the border coordinates. Single plot is cropped from the exp. block with the borders in *not-dominant* coordinate.
 
