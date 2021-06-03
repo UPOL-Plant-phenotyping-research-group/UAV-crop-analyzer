@@ -392,7 +392,7 @@ To manually localize field/region of interest in raw point cloud, use **manual_f
 3. Run module again to visually check field borders: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python manual_field_localizer.py```
 
 
-### Terrain handler
+### Terrain adjuster
 To remove outlier and de-terrain point cloud of field, use **terrain_adjuster.py** module. 
 
 1. In configs folder edit with text editor file **config_terrain_adjuster.py** and configure module parameters.
@@ -417,7 +417,7 @@ To localize plots in block point cloud, use **plot_localizer.py** module.
 1. In configs folder edit with text editor file **config_plot_localizer.py** and configure module parameters.
 2. Call module from terminal: ```(UAV) Michals-MacBook-Pro:UAV-crop-analyzer michal$ python plot_localizer.py```
 
-### Plot stats evaluator
+### Growth stats evaluator
 To evaluate growth statistics for all plots in given plot point cloud (it's possible to evaluate batch of blocks), use **growth_stat_evaluator.py** module.
 
 1. In configs folder edit with text editor file **config_growth_stat_evaluator.py** and configure module parameters. 
