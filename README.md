@@ -30,6 +30,7 @@ Parameter UP_HEIGHT_QUANTILE determines percentage amount of points with biggest
 for manual ROI localization.
 ```
 
+
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/ROI.png?raw=true)
 
 ### 2. Terrain adjustment
