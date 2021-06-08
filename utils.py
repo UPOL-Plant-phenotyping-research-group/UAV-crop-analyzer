@@ -1,15 +1,39 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from laspy.file import File
 from scipy.signal import argrelmax
 import scipy
+from geomdl import BSpline
+from geomdl import utilities
 import warnings
 warnings.filterwarnings("ignore")
+
+def get_header(filepath: str):
+
+    lasFile = File(filepath, mode='r')
+
+    return lasFile.header
+
+def get_point_cloud(filepath: str, header):
+
+    lasFile = File(filepath, mode='r')
+    points = np.vstack((lasFile.x - header.min[0],lasFile.y - header.min[1], lasFile.z - header.min[2])).transpose()
+
+    return points
+
+def store_point_cloud(filepath: str, points: np.ndarray, header):
+
+    outFile = File(filepath, mode = "w", header = header)
+    outFile.x = points[:,0] + header.min[0]
+    outFile.y = points[:,1] + header.min[1]
+    outFile.z = points[:,2] + header.min[2]
+    outFile.close()   
 
 def save_img(points: np.ndarray, filename: str, path: str, elevation: int, azimuth: int):
 
     if filename == 'classification':
 
-        fig = plt.figure(figsize=[30, 20])
+        plt.figure(figsize=[30, 20])
         ax = plt.axes(projection='3d')
         ax.view_init(elevation, azimuth)
         ax.scatter(points[:,0], points[:,1], points[:,2], c = points[:,3], s = 0.01, marker='o')
@@ -20,7 +44,7 @@ def save_img(points: np.ndarray, filename: str, path: str, elevation: int, azimu
 
     elif filename == 'edge':
 
-        fig = plt.figure(figsize=[30, 20])
+        plt.figure(figsize=[30, 20])
         ax = plt.axes(projection='3d')
         ax.view_init(elevation, azimuth)
         idxs = points[:,3] < np.quantile(points[:,3], 0.01)
@@ -32,7 +56,7 @@ def save_img(points: np.ndarray, filename: str, path: str, elevation: int, azimu
 
     else:
 
-        fig = plt.figure(figsize=[30, 20])
+        plt.figure(figsize=[30, 20])
         ax = plt.axes(projection='3d')
         ax.view_init(elevation, azimuth)
         ax.scatter(points[:,0], points[:,1], points[:,2], c = points[:,2], s = 0.01, marker='o')
@@ -46,10 +70,10 @@ def rotate_points(points: np.ndarray, angle:float):
     rotation_matrix = np.matrix([[np.cos(angle),-np.sin(angle)],[np.sin(angle),np.cos(angle)]])
     points_xy = points[:,0:2]*rotation_matrix 
     
-    return np.array(np.hstack((points_xy, points[:,2].reshape(-1,1))))
+    return np.array(np.hstack((points_xy, points[:,2:])))
 
 
-def compute_projections(points: np.ndarray, division: float):
+def compute_projections(points: np.ndarray, signal_span: float):
 
     projections_x = []
     projections_y = []
@@ -57,9 +81,9 @@ def compute_projections(points: np.ndarray, division: float):
     y_loc = []
 
     bounds_x = np.linspace(int(np.floor(points[:,0].min())), int(np.floor(points[:,0].max())+1),
-    round((1/division)*(int(np.floor(points[:,0].max())+1) - int(np.floor(points[:,0].min())))))
+    round((1/signal_span)*(int(np.floor(points[:,0].max())+1) - int(np.floor(points[:,0].min())))))
 
-    for i, dirr in enumerate(bounds_x):
+    for i, _ in enumerate(bounds_x):
 
         if i > 0: 
 
@@ -68,9 +92,9 @@ def compute_projections(points: np.ndarray, division: float):
 
 
     bounds_y = np.linspace(int(np.floor(points[:,1].min())), int(np.floor(points[:,1].max())+1),
-    round((1/division)*(int(np.floor(points[:,1].max())+1) - int(np.floor(points[:,1].min())))))
+    round((1/signal_span)*(int(np.floor(points[:,1].max())+1) - int(np.floor(points[:,1].min())))))
 
-    for i, dirr in enumerate(bounds_y):
+    for i, _ in enumerate(bounds_y):
 
         if i > 0: 
             projections_y.append(points[(points[:,1] >= bounds_y[i-1]) & (points[:,1] < bounds_y[i]),2].sum())
@@ -78,15 +102,15 @@ def compute_projections(points: np.ndarray, division: float):
     
     return np.reshape(x_loc + projections_x, (2,len(projections_x))).T, np.reshape(y_loc + projections_y, (2,len(projections_y))).T
 
-def compute_projection(points: np.ndarray, division: float, coord: int):
+def compute_projection(points: np.ndarray, signal_span: float, coord: int):
 
     projections = []
     loc = []
 
     bounds = np.linspace(int(np.floor(points[:,coord].min())), int(np.floor(points[:,coord].max())+1),
-    round((1/division)*(int(np.floor(points[:,coord].max())+1) - int(np.floor(points[:,coord].min())))))
+    round((1/signal_span)*(int(np.floor(points[:,coord].max())+1) - int(np.floor(points[:,coord].min())))))
 
-    for i, dirr in enumerate(bounds):
+    for i, _ in enumerate(bounds):
 
         if i > 0: 
 
@@ -96,15 +120,15 @@ def compute_projection(points: np.ndarray, division: float, coord: int):
     return np.reshape(loc + projections, (2,len(projections))).T
     
 
-def compute_signal(points: np.ndarray, division: float, coord: int):
+def compute_signal(points: np.ndarray, signal_span: float, coord: int):
 
     projections = []
     loc = []
 
     bounds = np.linspace(int(np.floor(points[:,coord].min())), int(np.floor(points[:,coord].max())+1),
-    round((1/division)*(int(np.floor(points[:,coord].max())+1) - int(np.floor(points[:,coord].min())))))
+    round((1/signal_span)*(int(np.floor(points[:,coord].max())+1) - int(np.floor(points[:,coord].min())))))
 
-    for i, dirr in enumerate(bounds):
+    for i, _ in enumerate(bounds):
 
         if i > 0: 
 
@@ -116,7 +140,7 @@ def compute_signal(points: np.ndarray, division: float, coord: int):
     return np.reshape(loc + projections, (2,len(projections))).T
     
 
-def find_angle(points: np.ndarray,  detail_resolution: float):
+def find_angle(points: np.ndarray,  signal_detail: float):
 
     angles = []
     loss_value = []
@@ -127,7 +151,7 @@ def find_angle(points: np.ndarray,  detail_resolution: float):
 
         rotated_points = rotate_points(points, angle)
 
-        px, py  = compute_projections(rotated_points, division = detail_resolution)
+        px, py  = compute_projections(rotated_points, signal_detail)
 
         loss_value.append(-(np.var(px[:,1]) + np.var(py[:,1])))
 
@@ -165,38 +189,7 @@ def determine_plots_orientation(x_projection, y_projection):
     else: return 1
 
 
-def evaluate_plot_seeds(points: np.ndarray, detail_resolution: float):
 
-    px, py =  compute_projections(points, detail_resolution)
-    coord = determine_plots_orientation(px[:,1], py[:,1])
-
-    pr =  compute_projection(points, detail_resolution, coord)
-    sinf = fit_sin(pr[:,0], pr[:,1])
-    sinf_eval = sinf["fitfunc"](pr[:,0])
-
-    seeds_coord = pr[argrelmax(sinf_eval),0].reshape(-1,1)
-
-    return seeds_coord.reshape(-1), coord
-
-def find_plot_seeds(points: np.ndarray, plots_num: int):
-
-    seeds_num = 0 
-    resolution = 0
-    seeds = np.array([])
-
-    while seeds_num != plots_num and resolution <= 1:
-
-        resolution += 0.05
-
-        seeds_coord, coord = evaluate_plot_seeds(points, detail_resolution = resolution)
-        seeds_num = seeds_coord.shape[0]
-
-    projection = compute_projection(points, resolution, int(not bool(coord)))
-
-    if not coord: seeds = np.reshape(list(seeds_coord) + list(np.repeat(projection[np.argmax(projection[:,1]),0], plots_num)), (2, plots_num)).T
-    elif coord: seeds = np.reshape(list(np.repeat(projection[np.argmax(projection[:,1]),0], plots_num)) + list(seeds_coord), (2, plots_num)).T
-
-    return seeds, resolution, coord
 
 def clean_edge_noise(points: np.ndarray, resolution: float, coord: int):
 

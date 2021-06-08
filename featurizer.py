@@ -1,15 +1,22 @@
+import os
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import scale
 from sklearn.decomposition import PCA
-#from scipy.spatial import KDTree #metric is not optional
 from sklearn.neighbors import KDTree
+from tqdm import tqdm, trange
+
+from configs.config_cloud_evaluator import cloud_featurizer_Parameters
+
+
+
 
 class CloudFeaturizer():
 
     def __init__(self, point_cloud: np.ndarray, metric: str, dimensions:list):
 
-        assert metric in ['euclidean', 'l2', 'minkowski', 'p', 'manhattan', 'cityblock', 'l1', 'chebyshev', 'infinity'], 'metric argument has to be one of (euclidean, l2, minkowski, p, manhattan, cityblock, l1, chebyshev, infinity)'
+        assert metric in ["euclidean", "manhattan", "chebyshev", "minkowski", "wminkowski", "seuclidean", 
+        "mahalanobis"], 'Parameter METRIC has to be string value and one of(euclidean, manhattan, chebyshev, minkowski, wminkowski, seuclidean, mahalanobis)'
 
         self.point_cloud = point_cloud
         self.metric = metric
@@ -40,7 +47,7 @@ class CloudFeaturizer():
             neighbors = points[indexes,:]
 
             pca = PCA(n_components=3)
-            principalComponents = pca.fit_transform(neighbors)
+            pca.fit_transform(neighbors)
 
             eigenvalues = pca.explained_variance_
             eigenvectors = pca.components_
@@ -87,30 +94,28 @@ class CloudFeaturizer():
 
             return eigenvalues.tolist() + eigenvectors.flatten().tolist() + [SUM, OMNIVARIANCE, EIGENENTROPY, ANISOTROPY, PLANARITY, LINEARITY, SURFACEV, SPHERICITY, VERTICALITY, FOM, DISTANCE]
 
-        else: return list(np.repeat(None, 23))
+        else: 
+            
+            return list(np.repeat(None, 23))
 
 
     def collect_cloud_features(self):
+
+        cfP = cloud_featurizer_Parameters()
         
+        #nn_feat = np.zeros_like(0, shape = (self.x.shape[0],23))
+        #per_feat = np.zeros_like(0, shape = (self.x.shape[0],23))
         nn_feat = []
         per_feat = []
-
-        it = 0
-
-        for i, point in enumerate(self.x):
-
-            it += 1
-
-            nn_neighborhood = self.get_neighborhood(point, self.tree, method = 'n-neighbors', radius = 0.07, K=30)
-            per_neighborhood = self.get_neighborhood(point, self.tree, method = 'perimeter', radius = 0.07, K=30)
+        for i, point in enumerate(tqdm(self.x)):
             
-
+            nn_neighborhood = self.get_neighborhood(point, self.tree, method = 'n-neighbors', radius = cfP.RADIUS, K=cfP.K)
+            per_neighborhood = self.get_neighborhood(point, self.tree, method = 'perimeter', radius = cfP.RADIUS, K=cfP.K)
+            
             nn_feat.append(self.compute_point_features(point, self.x, nn_neighborhood))
             per_feat.append(self.compute_point_features(point, self.x, per_neighborhood))
 
-            print('{} of {} was analyzed'.format(it, self.x.shape[0]))
-
-        NN_FEATURES = StandardScaler().fit_transform(np.array(nn_feat))
-        PER_FEATURES = StandardScaler().fit_transform(np.array(per_feat))
+        NN_FEATURES = StandardScaler().fit_transform(nn_feat)
+        PER_FEATURES = StandardScaler().fit_transform(per_feat)
 
         return {'nn_neighborhood': NN_FEATURES, 'perimeter_neighborhood':PER_FEATURES}

@@ -8,18 +8,21 @@ import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings("ignore")
 
+from configs.config_plot_stats_evaluator import plot_grid_Parameters
+from configs.config_plot_stats_evaluator import surface_fit_Parameters
+
 class VolumeEvaluator(object):
 
     #Median method -  as a reference height in given interval, median of raw points z-coordinate is taken
     #Surface method - NURBS surface fit is used to model surface of given field, in given interval median of z-coordinate of surface points is taken as reference height
 
-    def __init__(self, points: np.ndarray, area_size: float, method: str, surface_resolution: int, visualize: bool):
+    def __init__(self, points: np.ndarray, area_size: float, method: str, visualize: bool):
 
         assert (method == 'raw') or (method == 'surface'), 'Method of volume evaluation has to be median or surface'
+        assert (type(area_size) == float) and (area_size > 0), 'Argument area_size has to be positive float value'
 
         self.points = points
         self.area_size = area_size
-        self.surface_resolution = surface_resolution
         self.method = method
         self.visualize = visualize
 
@@ -32,7 +35,7 @@ class VolumeEvaluator(object):
                     yield (points[(points[:,0] >= x) & (points[:,0] < x+windowSize) & (points[:,1] >= y) & (points[:,1] < y+windowSize)])
 
 
-    def create_terrain_grid(self, points: np.ndarray, metric='minkowski', K = 10, grid_resolution = 100):
+    def terrain_grid(self, points: np.ndarray, metric: str, K: int, grid_resolution: int):
 
         terrain_grid = []
         tree = KDTree(points[:,:2], metric = metric)
@@ -55,7 +58,7 @@ class VolumeEvaluator(object):
         return np.array(terrain_grid)
 
 
-    def surface_fit(self, terrain_grid, grid_resolution = 100, u_degree = 2, v_degree = 2, delta = 0.01):
+    def surface_fit(self, terrain_grid, grid_resolution: int, u_degree: int, v_degree: int, delta: float):
 
         # Create a BSpline surface instance
         surf = BSpline.Surface()
@@ -102,19 +105,28 @@ class VolumeEvaluator(object):
 
     def _execute(self):
 
-        VOLUME = 0
+        pgP = plot_grid_Parameters()
+        sfP = surface_fit_Parameters()
+
+        volume = 0
 
         if self.method == 'raw':
 
-            VOLUME = self.compute_volume(self.points, self.area_size)
+            volume = self.compute_volume(self.points, self.area_size)
+
+            stats = {'volume': volume, 'height_median': np.median(self.points[:,2]), 'height_variability': np.var(self.points[:,2])}
 
         elif self.method == 'surface':
 
-            grid = self.create_terrain_grid(self.points, metric='minkowski', K = 10, grid_resolution = self.surface_resolution)
-            surface = self.surface_fit(grid, grid_resolution = self.surface_resolution, u_degree = 2, v_degree = 2, delta = 0.01)
+            grid = self.terrain_grid(self.points, metric=pgP.METRIC, K = pgP.K, grid_resolution = pgP.GRID_RESOLUTION)
+            surface = self.surface_fit(grid, grid_resolution = pgP.GRID_RESOLUTION, u_degree = sfP.U_DEGREE,
+            v_degree = sfP.V_DEGREE, delta = sfP.DELTA)
+            surface_points = np.array(surface.evalpts)
 
-            VOLUME = self.compute_volume(np.array(surface.evalpts), self.area_size)
+            volume = self.compute_volume(surface_points, self.area_size)
+
+            stats = {'surface_volume': volume, 'surface_height_median': np.median(surface_points[:,2]), 'surface_height_variability': np.var(surface_points[:,2])}
 
             if self.visualize: self.surface_visualizer(surface)
 
-        return VOLUME
+        return stats
