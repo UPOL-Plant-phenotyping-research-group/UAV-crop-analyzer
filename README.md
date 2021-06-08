@@ -191,7 +191,9 @@ The module **block\_localizer.py** performs the experimental blocks localization
 
 Then with the optimal value of rotation, the crop points  are rotated into the new coordinate system  x'y'z. The coordinate of x'y'-plane with the higher value of the height signal variation is defined as *dominant* and coordinate with the lower value as *not-dominant*. The experimental blocks orientation is determined with the *dominant*/*not-dominant* coordinate evaluation. In this way the block borders in the rotated coordinate system will be parallel with the x' and y' axis, so it can be defined with the rectangular-shaped border. 
 			
-Next step is the localization of the experimental block seeds. The block seed is a point which is located within the experimental block border. The height signal with the user-defined *signal span* parameter evaluated in the *dominant* coordinate of the rotated crop points is used as signal for the seeds localization. The seed locations are computed with the Fourier transform as the coordinate of the curve maximum peaks. The user has to specify the number of blocks, it is the important input for the block localization. Without the correct value it's not possible to localize the experimental blocks. 
+Next step is the localization of the experimental block seeds. The block seed is a point which is located within the experimental block border. The height signal with the user-defined *signal span* parameter evaluated in the *dominant* coordinate of the rotated crop points is used as signal for the seeds localization. The seed locations are computed with the Fourier transform as the coordinate of the curve maximum peaks. The user has to specify the number of blocks, it is the important input for the block localization. Without the correct value it's not possible to localize the experimental blocks.
+
+![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/rotated_vegetation.png?raw=true)
 
 ![alt text](https://github.com/UPOL-Plant-phenotyping-research-group/UAV-crop-analyzer/blob/main/readme_images/plot_signal.png?raw=true)
 
